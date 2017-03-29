@@ -106,12 +106,26 @@ module AzureToS3
       end
     end
   end
+
+  class InMemoryBlobStorage
+    def initialize
+      @blobs = []
+    end
+
+    def <<(blob)
+      @blobs << blob
+    end
+
+    def each(&block)
+      @blobs.each &block
+    end
+  end
 end
 
 marker_storage = AzureToS3::MarkerStorage.new File.expand_path(File.join(File.dirname(__FILE__), 'last_marker'))
 blob_client = AzureToS3::AzureBlobClient.new 'imagestos3', marker_storage
 s3_client = AzureToS3::S3Client.new 'azure-migration-test'
+local_blobs = AzureToS3::InMemoryBlobStorage.new
 
-local_blobs = []
 blob_client.fetch_blobs local_blobs
 AzureToS3::BlobWorker.new(local_blobs, blob_client, s3_client).work
