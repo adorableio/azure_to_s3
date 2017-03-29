@@ -9,11 +9,31 @@ require 'aws-sdk'
 require 'benchmark'
 
 module AzureToS3
+  class MarkerStorage
+    attr_reader :marker
+
+    def initialize(file_name)
+      @file_name = file_name
+      @marker = File.read(@file_name) if File.exist?(@file_name)
+    end
+
+    def marker=(marker)
+      if marker
+        File.open(@file_name, 'w') {|f| f << marker }
+      else
+        FileUtils.rm_f(@file_name)
+      end
+      @marker = marker
+    end
+  end
+
   class AzureBlobClient
-    def initialize(container)
+    def initialize(container, marker_storage, max_results=nil)
       @container = container
       @azure_client = Azure::Storage::Client.create
       @blob_client = @azure_client.blob_client
+      @marker_storage = marker_storage
+      @max_results = max_results
     end
 
     def fetch_blob_content(blob)
@@ -41,15 +61,16 @@ module AzureToS3
     end
 
     private
-    def each_blob(count=5_000, &block)
-      @blob_client.list_blobs(@container, marker: @marker, max_results: count).tap do |results|
+    def each_blob(&block)
+      @blob_client.list_blobs(@container, marker: @marker_storage.marker, max_results: @max_results).tap do |results|
         results.each &block
 
-        @marker = results.continuation_token
-        @marker = nil if @marker.empty?
+        marker = results.continuation_token
+        marker = nil if marker.empty?
+        @marker_storage.marker = marker
       end
 
-      each_blob count, &block if @marker
+      each_blob(&block) if @marker_storage.marker
     end
   end
 
@@ -65,7 +86,8 @@ module AzureToS3
   end
 end
 
-blob_client = AzureToS3::AzureBlobClient.new 'imagestos3'
+marker_storage = AzureToS3::MarkerStorage.new File.expand_path(File.join(File.dirname(__FILE__), 'last_marker'))
+blob_client = AzureToS3::AzureBlobClient.new 'imagestos3', marker_storage
 s3_client = AzureToS3::S3Client.new 'azure-migration-test'
 
 local_blobs = []
