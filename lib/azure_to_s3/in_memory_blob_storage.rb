@@ -1,5 +1,7 @@
 module AzureToS3
   class InMemoryBlobStorage
+    attr_accessor :marker
+
     def initialize
       @blobs = []
     end

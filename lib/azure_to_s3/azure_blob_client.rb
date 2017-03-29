@@ -2,11 +2,11 @@ require 'azure/storage'
 
 module AzureToS3
   class AzureBlobClient
-    def initialize(container, marker_storage, max_results=nil)
+    def initialize(container, storage, max_results=nil)
       @container = container
       @azure_client = Azure::Storage::Client.create
       @blob_client = @azure_client.blob_client
-      @marker_storage = marker_storage
+      @storage = storage
       @max_results = max_results
     end
 
@@ -23,10 +23,10 @@ module AzureToS3
       yield(content) if blob[:validated]
     end
 
-    def fetch_blobs(storage)
+    def fetch_blobs(storage=nil)
       each_blob do |blob|
         props = blob.properties
-        storage << {
+        @storage << {
           name: blob.name,
           md5_64: props.fetch(:content_md5),
           content_length: props.fetch(:content_length)
@@ -36,15 +36,15 @@ module AzureToS3
 
     private
     def each_blob(&block)
-      @blob_client.list_blobs(@container, marker: @marker_storage.marker, max_results: @max_results).tap do |results|
+      @blob_client.list_blobs(@container, marker: @storage.marker, max_results: @max_results).tap do |results|
         results.each &block
 
         marker = results.continuation_token
         marker = nil if marker.empty?
-        @marker_storage.marker = marker
+        @storage.marker = marker
       end
 
-      each_blob(&block) if @marker_storage.marker
+      each_blob(&block) if @storage.marker
     end
   end
 end

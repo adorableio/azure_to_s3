@@ -6,7 +6,7 @@ module AzureToS3
       @db = db
     end
 
-    def setup_table
+    def setup_tables
       unless @db.table_exists?(:blobs)
         @db.create_table :blobs do
           primary_key :id
@@ -15,6 +15,12 @@ module AzureToS3
           Integer :content_length
           String :validated
           Boolean :uploaded_to_s3, default: false, null: false
+        end
+      end
+
+      unless @db.table_exists?(:marker)
+        @db.create_table :marker do
+          String :marker, null: false
         end
       end
     end
@@ -42,6 +48,23 @@ module AzureToS3
 
     def update(blob)
       @db[:blobs].where(id: blob[:id]).update(blob)
+    end
+
+    def marker=(marker)
+      if marker
+        if existing = @db[:marker].first
+          existing.update(marker: marker)
+        else
+          @db[:marker].insert(marker: marker)
+        end
+      else
+        @db[:marker].delete
+      end
+    end
+
+    def marker
+      record = @db[:marker].first
+      record[:marker] if record
     end
   end
 end
