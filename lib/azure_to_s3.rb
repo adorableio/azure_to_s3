@@ -12,15 +12,15 @@ module AzureToS3
     when :memory
       @storage = InMemoryStorage.new
     when :postgres
-      db = Sequel.postgres 'azure_to_s3'
+      db = Sequel.postgres ENV.fetch('AZURE_TO_S3_POSTGRES')
       @storage = SequelStorage.new db
       @storage.setup_tables
     else
       raise "Unknown adapter: #{adapter}"
     end
 
-    @blob_client = AzureBlobClient.new 'imagestos3', @storage
-    @s3_client = S3Client.new 'azure-migration-test'
+    @blob_client = AzureBlobClient.new ENV.fetch('AZURE_TO_S3_CONTAINER'), @storage
+    @s3_client = S3Client.new ENV.fetch('AZURE_TO_S3_BUCKET')
   end
 
   def self.fetch
