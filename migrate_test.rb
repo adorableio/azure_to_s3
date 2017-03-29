@@ -57,11 +57,11 @@ module AzureToS3
   end
 end
 
-local_blobs = []
 blob_client = AzureToS3::AzureBlobClient.new 'imagestos3'
-blob_client.fetch_blobs local_blobs
-
 s3_client = AzureToS3::S3Client.new 'azure-migration-test'
+
+local_blobs = []
+blob_client.fetch_blobs local_blobs
 
 local_blobs.each do |blob|
   blob_client.fetch_blob_content(blob) do |content|
