@@ -84,6 +84,28 @@ module AzureToS3
       @s3.put_object bucket: @bucket, key: blob.fetch(:name), body: content, content_md5: blob.fetch(:md5_64)
     end
   end
+
+  class BlobWorker
+    def initialize(storage, blob_client, s3_client)
+      @storage = storage
+      @blob_client = blob_client
+      @s3_client = s3_client
+    end
+
+    def work
+      @storage.each do |blob|
+        @blob_client.fetch_blob_content(blob) do |content|
+          @s3_client.upload_blob blob, content
+        end
+
+        if blob[:validated]
+          puts "Successfully uploaded #{blob.fetch(:name)} (#{blob.fetch(:validated)})"
+        else
+          $stderr.puts "Blob failed checksum: #{blob.inspect}"
+        end
+      end
+    end
+  end
 end
 
 marker_storage = AzureToS3::MarkerStorage.new File.expand_path(File.join(File.dirname(__FILE__), 'last_marker'))
@@ -92,15 +114,4 @@ s3_client = AzureToS3::S3Client.new 'azure-migration-test'
 
 local_blobs = []
 blob_client.fetch_blobs local_blobs
-
-local_blobs.each do |blob|
-  blob_client.fetch_blob_content(blob) do |content|
-    s3_client.upload_blob blob, content
-  end
-
-  if blob[:validated]
-    puts "Successfully uploaded #{blob.fetch(:name)} (#{blob.fetch(:validated)})"
-  else
-    $stderr.puts "Blob failed checksum: #{blob.inspect}"
-  end
-end
+AzureToS3::BlobWorker.new(local_blobs, blob_client, s3_client).work
