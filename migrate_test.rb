@@ -7,6 +7,7 @@
 require 'azure/storage'
 require 'aws-sdk'
 require 'benchmark'
+require 'sequel'
 
 module AzureToS3
   class MarkerStorage
@@ -41,9 +42,9 @@ module AzureToS3
       md5 = Digest::MD5.new.tap {|m| m.update(content) }.base64digest
 
       if md5 == blob.fetch(:md5_64)
-        blob[:validated] = :md5
+        blob[:validated] = 'md5'
       elsif content.size == blob.fetch(:content_length)
-        blob[:validated] = :length
+        blob[:validated] = 'length'
       end
 
       yield(content) if blob[:validated]
@@ -96,6 +97,8 @@ module AzureToS3
       @storage.each do |blob|
         @blob_client.fetch_blob_content(blob) do |content|
           @s3_client.upload_blob blob, content
+          blob[:uploaded_to_s3] = true
+          @storage.update blob
         end
 
         if blob[:validated]
@@ -119,13 +122,47 @@ module AzureToS3
     def each(&block)
       @blobs.each &block
     end
+
+    def update(blob)
+      # no-op... it's all in memory
+    end
+  end
+
+  class SequelBlobStorage
+    def initialize(db)
+      @db = db
+    end
+
+    def <<(blob)
+      @db[:blobs].insert(blob).tap {|id| blob[:id] = id }
+    end
+
+    def each(&block)
+      @db[:blobs].each &block
+    end
+
+    def update(blob)
+      @db[:blobs].where(id: blob[:id]).update(blob)
+    end
   end
 end
 
 marker_storage = AzureToS3::MarkerStorage.new File.expand_path(File.join(File.dirname(__FILE__), 'last_marker'))
 blob_client = AzureToS3::AzureBlobClient.new 'imagestos3', marker_storage
 s3_client = AzureToS3::S3Client.new 'azure-migration-test'
-local_blobs = AzureToS3::InMemoryBlobStorage.new
 
-blob_client.fetch_blobs local_blobs
-AzureToS3::BlobWorker.new(local_blobs, blob_client, s3_client).work
+db = Sequel.sqlite 'funky.db'
+
+db.create_table :blobs do
+  primary_key :id
+  String :name
+  String :md5_64
+  Integer :content_length
+  String :validated
+  Boolean :uploaded_to_s3, default: false, null: false
+end
+
+blobs = AzureToS3::SequelBlobStorage.new db
+
+blob_client.fetch_blobs blobs
+AzureToS3::BlobWorker.new(blobs, blob_client, s3_client).work
