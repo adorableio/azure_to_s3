@@ -1,12 +1,4 @@
 #!/usr/bin/env ruby
 require_relative '../lib/azure_to_s3'
 
-marker_storage = AzureToS3::MarkerStorage.new File.expand_path(File.join(File.dirname(__FILE__), 'last_marker'))
-blob_client = AzureToS3::AzureBlobClient.new 'imagestos3', marker_storage
-s3_client = AzureToS3::S3Client.new 'azure-migration-test'
-
-db = Sequel.postgres 'azure_to_s3'
-storage = AzureToS3::SequelBlobStorage.new db
-storage.setup_table
-
-AzureToS3::BlobWorker.new(storage, blob_client, s3_client).work
+AzureToS3.put
