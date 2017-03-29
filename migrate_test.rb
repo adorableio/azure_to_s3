@@ -16,10 +16,6 @@ module AzureToS3
       @blob_client = @azure_client.blob_client
     end
 
-    def blob_list
-      @blob_client.list_blobs @container
-    end
-
     def fetch_blob_content(blob)
       _, content = @blob_client.get_blob @container, blob.fetch(:name)
       md5 = Digest::MD5.new.tap {|m| m.update(content) }.base64digest
@@ -34,7 +30,7 @@ module AzureToS3
     end
 
     def fetch_blobs(storage)
-      blob_list.each do |blob|
+      each_blob do |blob|
         props = blob.properties
         storage << {
           name: blob.name,
@@ -42,6 +38,18 @@ module AzureToS3
           content_length: props.fetch(:content_length)
         }
       end
+    end
+
+    private
+    def each_blob(count=5_000, &block)
+      @blob_client.list_blobs(@container, marker: @marker, max_results: count).tap do |results|
+        results.each &block
+
+        @marker = results.continuation_token
+        @marker = nil if @marker.empty?
+      end
+
+      each_blob count, &block if @marker
     end
   end
 
