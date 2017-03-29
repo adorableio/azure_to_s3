@@ -138,14 +138,14 @@ module AzureToS3
     end
 
     def each(&block)
-      while true
-        @db.transaction do
-          if record = @db['SELECT * FROM blobs WHERE uploaded_to_s3 IS FALSE ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1'].first
-            block.call record
-          else
-            sleep 1
-          end
+      while (@db.transaction {
+        if record = @db['SELECT * FROM blobs WHERE uploaded_to_s3 IS FALSE ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1'].first
+          block.call record
+          record
+        else
+          puts "No records found, ending"
         end
+      })
       end
     end
 
