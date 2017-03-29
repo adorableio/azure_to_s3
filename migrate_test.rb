@@ -134,7 +134,12 @@ module AzureToS3
     end
 
     def <<(blob)
-      @db[:blobs].insert(blob).tap {|id| blob[:id] = id }
+      if existing = @db[:blobs].where(name: blob[:name]).first
+        blob[:id] = existing[:id]
+        update(blob)
+      else
+        @db[:blobs].insert(blob).tap {|id| blob[:id] = id }
+      end
     end
 
     def each(&block)
