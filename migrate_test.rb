@@ -151,7 +151,7 @@ marker_storage = AzureToS3::MarkerStorage.new File.expand_path(File.join(File.di
 blob_client = AzureToS3::AzureBlobClient.new 'imagestos3', marker_storage
 s3_client = AzureToS3::S3Client.new 'azure-migration-test'
 
-db = Sequel.sqlite 'funky.db'
+db = Sequel.postgres 'azure_to_s3'
 
 db.create_table :blobs do
   primary_key :id
