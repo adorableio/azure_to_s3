@@ -1,8 +1,3 @@
-# export AZURE_STORAGE_ACCOUNT=gtwww
-# export AZURE_STORAGE_ACCESS_KEY=<azure storage access key>
-# export AWS_ACCESS_KEY_ID=<aws access key id>
-# export AWS_SECRET_ACCESS_KEY=<aws secret access key>
-# export AWS_REGION=<aws region ("us-east-1")
 $:.unshift File.dirname(__FILE__)
 require 'azure_to_s3/marker_storage'
 require 'azure_to_s3/azure_blob_client'
