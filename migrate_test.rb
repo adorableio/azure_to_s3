@@ -20,9 +20,17 @@ module AzureToS3
       @blob_client.list_blobs @container
     end
 
-    def get_blob_content(blob_name)
-      blob, content = @blob_client.get_blob @container, blob_name
-      content
+    def fetch_blob_content(blob)
+      _, content = @blob_client.get_blob @container, blob.fetch(:name)
+      md5 = Digest::MD5.new.tap {|m| m.update(content) }.base64digest
+
+      if md5 == blob.fetch(:md5_64)
+        blob[:validated] = :md5
+      elsif content.size == blob.fetch(:content_length)
+        blob[:validated] = :length
+      end
+
+      yield(content) if blob[:validated]
     end
 
     def fetch_blobs(storage)
@@ -34,26 +42,6 @@ module AzureToS3
           content_length: props.fetch(:content_length)
         }
       end
-    end
-  end
-
-  class BlobValidator
-    def initialize(client, blob)
-      @client = client
-      @blob = blob
-    end
-
-    def validate
-      content = @client.get_blob_content @blob.fetch(:name)
-      md5 = Digest::MD5.new.tap {|m| m.update(content) }.base64digest
-
-      if md5 == @blob.fetch(:md5_64)
-        @blob[:validated] = :md5
-      elsif content.size == @blob.fetch(:content_length)
-        @blob[:validated] = :length
-      end
-
-      yield(content) if @blob[:validated]
     end
   end
 
@@ -76,7 +64,7 @@ blob_client.fetch_blobs local_blobs
 s3_client = AzureToS3::S3Client.new 'azure-migration-test'
 
 local_blobs.each do |blob|
-  AzureToS3::BlobValidator.new(blob_client, blob).validate do |content|
+  blob_client.fetch_blob_content(blob) do |content|
     s3_client.upload_blob blob, content
   end
 
