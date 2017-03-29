@@ -23,7 +23,7 @@ module AzureToS3
       yield(content) if blob[:validated]
     end
 
-    def fetch_blobs(storage=nil)
+    def fetch_blobs
       each_blob do |blob|
         props = blob.properties
         @storage << {

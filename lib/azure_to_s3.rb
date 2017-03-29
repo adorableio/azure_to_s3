@@ -25,7 +25,7 @@ module AzureToS3
 
   def self.fetch
     setup
-    @blob_client.fetch_blobs @storage
+    @blob_client.fetch_blobs
   end
 
   def self.put
