@@ -5,8 +5,8 @@ require_relative 'azure_to_s3/in_memory_storage'
 require_relative 'azure_to_s3/sequel_storage'
 
 module AzureToS3
-  def self.setup
-    @adapter = ENV.fetch('ADAPTER', 'memory').to_sym
+  def self.setup(adapter=ENV.fetch('ADAPTER', 'memory').to_sym)
+    @adapter = adapter
 
     case @adapter
     when :memory
