@@ -1,10 +1,9 @@
-$:.unshift File.dirname(__FILE__)
-require 'azure_to_s3/marker_storage'
-require 'azure_to_s3/azure_blob_client'
-require 'azure_to_s3/s3_client'
-require 'azure_to_s3/blob_worker'
-require 'azure_to_s3/in_memory_blob_storage'
-require 'azure_to_s3/sequel_blob_storage'
+require_relative 'azure_to_s3/marker_storage'
+require_relative 'azure_to_s3/azure_blob_client'
+require_relative 'azure_to_s3/s3_client'
+require_relative 'azure_to_s3/blob_worker'
+require_relative 'azure_to_s3/in_memory_blob_storage'
+require_relative 'azure_to_s3/sequel_blob_storage'
 
 marker_storage = AzureToS3::MarkerStorage.new File.expand_path(File.join(File.dirname(__FILE__), 'last_marker'))
 blob_client = AzureToS3::AzureBlobClient.new 'imagestos3', marker_storage
