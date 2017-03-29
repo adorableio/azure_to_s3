@@ -16,19 +16,8 @@ blob_client = AzureToS3::AzureBlobClient.new 'imagestos3', marker_storage
 s3_client = AzureToS3::S3Client.new 'azure-migration-test'
 
 db = Sequel.postgres 'azure_to_s3'
-
-unless db.table_exists?(:blobs)
-  db.create_table :blobs do
-    primary_key :id
-    String :name
-    String :md5_64
-    Integer :content_length
-    String :validated
-    Boolean :uploaded_to_s3, default: false, null: false
-  end
-end
-
 blobs = AzureToS3::SequelBlobStorage.new db
+blobs.setup_table
 
 blob_client.fetch_blobs blobs
 AzureToS3::BlobWorker.new(blobs, blob_client, s3_client).work

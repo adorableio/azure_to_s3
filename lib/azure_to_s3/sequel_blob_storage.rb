@@ -6,6 +6,19 @@ module AzureToS3
       @db = db
     end
 
+    def setup_table
+      unless @db.table_exists?(:blobs)
+        @db.create_table :blobs do
+          primary_key :id
+          String :name
+          String :md5_64
+          Integer :content_length
+          String :validated
+          Boolean :uploaded_to_s3, default: false, null: false
+        end
+      end
+    end
+
     def <<(blob)
       if existing = @db[:blobs].where(name: blob[:name]).first
         blob[:id] = existing[:id]
