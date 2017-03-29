@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+require_relative '../lib/azure_to_s3'
+
+marker_storage = AzureToS3::MarkerStorage.new File.expand_path(File.join(File.dirname(__FILE__), 'last_marker'))
+blob_client = AzureToS3::AzureBlobClient.new 'imagestos3', marker_storage
+
+db = Sequel.postgres 'azure_to_s3'
+storage = AzureToS3::SequelBlobStorage.new db
+storage.setup_table
+
+blob_client.fetch_blobs storage

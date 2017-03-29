@@ -1,3 +1,5 @@
+require 'fileutils'
+
 module AzureToS3
   class MarkerStorage
     attr_reader :marker
