@@ -1,7 +1,7 @@
 require 'sequel'
 
 module AzureToS3
-  class SequelBlobStorage
+  class SequelStorage
     def initialize(db)
       @db = db
     end
