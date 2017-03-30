@@ -29,6 +29,7 @@ GEM
     nokogiri (1.6.8.1)
       mini_portile2 (~> 2.1.0)
     pg (0.20.0)
+    rack (2.0.1)
     rspec (3.5.0)
       rspec-core (~> 3.5.0)
       rspec-expectations (~> 3.5.0)
@@ -52,6 +53,7 @@ DEPENDENCIES
   aws-sdk
   azure-storage
   pg
+  rack
   rspec
   sequel
   sqlite3

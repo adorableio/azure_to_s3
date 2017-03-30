@@ -74,6 +74,17 @@ module AzureToS3
       record[:marker] if record
     end
 
+    def stats
+      @db[
+        'SELECT * FROM
+          (SELECT COUNT(*) AS count_all FROM blobs) AS c1,
+          (SELECT COUNT(*) AS count_uploaded FROM blobs WHERE uploaded_to_s3 IS TRUE) AS c2,
+          (SELECT COUNT(*) AS validated_md5 FROM blobs WHERE validated=\'md5\') AS c3,
+          (SELECT COUNT(*) AS validated_length FROM blobs WHERE validated=\'length\') AS c4
+        '
+      ].first
+    end
+
     private
     def update(blob)
       @db[:blobs].where(id: blob[:id]).update(blob)

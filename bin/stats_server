@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+require_relative '../lib/azure_to_s3'
+
+AzureToS3.stats_server
