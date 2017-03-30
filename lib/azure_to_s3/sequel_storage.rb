@@ -82,7 +82,7 @@ module AzureToS3
           (SELECT COUNT(*) AS validated_md5 FROM blobs WHERE validated=\'md5\') AS c3,
           (SELECT COUNT(*) AS validated_length FROM blobs WHERE validated=\'length\') AS c4
         '
-      ].first
+      ].first.merge(uploaders: `ps ax | grep put_to_s3 | grep ruby | wc -l`.strip.to_i)
     end
 
     private
