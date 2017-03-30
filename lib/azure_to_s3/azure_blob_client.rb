@@ -19,8 +19,9 @@ module AzureToS3
       end
 
       md5 = Digest::MD5.new.tap {|m| m.update(content) }.base64digest
+      blob[:file_md5_64] = md5
 
-      if md5 == blob.fetch(:md5_64)
+      if md5 == blob.fetch(:azure_md5_64)
         blob[:validated] = 'md5'
       elsif content.size == blob.fetch(:content_length)
         blob[:validated] = 'length'
@@ -34,7 +35,7 @@ module AzureToS3
         props = blob.properties
         @storage << {
           name: blob.name,
-          md5_64: props.fetch(:content_md5),
+          azure_md5_64: props.fetch(:content_md5),
           content_length: props.fetch(:content_length)
         }
       end

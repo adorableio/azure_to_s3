@@ -20,26 +20,41 @@ describe AzureToS3::SequelStorage do
     end
 
     context 'an existing blob (matching on name)' do
-      let(:blob) { { name: 'chicken', md5_64: 'abc', content_length: 123 } }
+      let(:blob) { { name: 'chicken', file_md5_64: 'abc', content_length: 123 } }
       before { storage << blob }
 
       it 'does not create a new record' do
         expect { storage << blob }.to_not change { db[:blobs].count }
       end
 
+      it 'does not set uploaded_to_s3 to true' do
+        storage << blob
+        expect(blob[:uploaded_to_s3]).to be(false)
+        expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(false)
+      end
+
       context 'uploaded_to_s3=true' do
-        it 'sets it to false when the md5 differs' do
-          blob[:md5_64] = 'DEF'
+        before { db[:blobs].update(uploaded_to_s3: true) }
+
+        it 'sets it to false when the file_md5_64 differs' do
+          blob[:file_md5_64] = 'DEF'
           storage << blob
           expect(blob[:uploaded_to_s3]).to be(false)
           expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(false)
         end
 
-        it 'sets it to false when the content length differs' do
+        it 'sets it to false when the content_length differs' do
           blob[:content_length] = 456
           storage << blob
           expect(blob[:uploaded_to_s3]).to be(false)
           expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(false)
+        end
+
+        it 'does not set it to false when the existing file_md5_64 is nil' do
+          db[:blobs].update(file_md5_64: nil)
+          storage << blob
+          expect(blob[:uploaded_to_s3]).to be(true)
+          expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(true)
         end
       end
     end

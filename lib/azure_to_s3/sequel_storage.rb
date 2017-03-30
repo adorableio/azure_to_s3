@@ -11,7 +11,8 @@ module AzureToS3
         @db.create_table :blobs do
           primary_key :id
           String :name, null: false, unique: true
-          String :md5_64
+          String :azure_md5_64
+          String :file_md5_64
           Integer :content_length
           String :validated
           Boolean :uploaded_to_s3, default: false, null: false
@@ -31,7 +32,11 @@ module AzureToS3
     def <<(blob)
       if existing = @db[:blobs].where(name: blob[:name]).first
         blob[:id] = existing[:id]
-        blob[:uploaded_to_s3] = (blob[:md5_64] == existing[:md5_64]) && (blob[:content_length] == existing[:content_length])
+        if existing[:uploaded_to_s3]
+          blob[:uploaded_to_s3] = ((existing[:file_md5_64] && (blob[:file_md5_64] == existing[:file_md5_64])) ||
+                                    (blob[:file_md5_64] && !existing[:file_md5_64])) &&
+                                  (blob[:content_length] == existing[:content_length])
+        end
         update(blob)
       else
         blob[:uploaded_to_s3] = false
