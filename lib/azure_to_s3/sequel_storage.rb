@@ -10,11 +10,15 @@ module AzureToS3
       unless @db.table_exists?(:blobs)
         @db.create_table :blobs do
           primary_key :id
-          String :name
+          String :name, null: false
           String :md5_64
           Integer :content_length
           String :validated
           Boolean :uploaded_to_s3, default: false, null: false
+
+          index :name
+          index :validated
+          index :uploaded_to_s3
         end
       end
 
