@@ -55,12 +55,13 @@ module AzureToS3
       @db[:blobs].where(id: blob[:id]).update(blob)
     end
 
-    def marker=(marker)
-      if marker
+    def marker=(new_marker)
+      if new_marker
         if existing = @db[:marker].first
-          existing.update(marker: marker)
+          raise "Cannot update with the same marker" if existing[:marker] == new_marker
+          @db[:marker].update(marker: new_marker)
         else
-          @db[:marker].insert(marker: marker)
+          @db[:marker].insert(marker: new_marker)
         end
       else
         @db[:marker].delete

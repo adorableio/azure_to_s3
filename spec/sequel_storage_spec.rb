@@ -1,11 +1,11 @@
 require_relative '../lib/azure_to_s3'
 
 describe AzureToS3::SequelStorage do
-  describe '#<<(blob)' do
-    let(:db) { Sequel.sqlite }
-    let(:storage) { AzureToS3::SequelStorage.new db }
-    before { storage.setup_tables }
+  let(:db) { Sequel.sqlite }
+  let(:storage) { AzureToS3::SequelStorage.new db }
+  before { storage.setup_tables }
 
+  describe '#<<(blob)' do
     context 'a new blob' do
       it 'adds the blob to the database' do
         expect { storage << { name: 'chicken' } }
@@ -42,6 +42,32 @@ describe AzureToS3::SequelStorage do
           expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(false)
         end
       end
+    end
+  end
+
+  describe 'marker=(new_marker)' do
+    it 'inserts a new marker' do
+      expect { storage.marker = 'abc' }
+        .to change { db[:marker].count }.by(1)
+    end
+
+    it 'updates an existing marker' do
+      storage.marker = 'abc'
+      expect { storage.marker = 'def' }
+        .to_not change { db[:marker].count }
+      expect(db[:marker].first[:marker]).to eq('def')
+    end
+
+    it 'raises an error if the marker is the same' do
+      storage.marker = 'abc'
+      expect { storage.marker = 'abc' }
+        .to raise_error(/Cannot update with the same marker/)
+    end
+
+    it 'deletes an existing marker when the new marker is nil' do
+      storage.marker = 'abc'
+      expect { storage.marker = nil }
+        .to change { db[:marker].count }.by(-1)
     end
   end
 end
