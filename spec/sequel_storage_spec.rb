@@ -11,6 +11,12 @@ describe AzureToS3::SequelStorage do
         expect { storage << { name: 'chicken' } }
           .to change { db[:blobs].count }.by(1)
       end
+
+      it 'sets uploaded_to_s3 to false' do
+        blob = { name: 'chicken' }
+        storage << blob
+        expect(blob[:uploaded_to_s3]).to be(false)
+      end
     end
 
     context 'an existing blob (matching on name)' do
@@ -19,6 +25,22 @@ describe AzureToS3::SequelStorage do
 
       it 'does not create a new record' do
         expect { storage << blob }.to_not change { db[:blobs].count }
+      end
+
+      context 'uploaded_to_s3=true' do
+        it 'sets it to false when the md5 differs' do
+          blob[:md5_64] = 'DEF'
+          storage << blob
+          expect(blob[:uploaded_to_s3]).to be(false)
+          expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(false)
+        end
+
+        it 'sets it to false when the content length differs' do
+          blob[:content_length] = 456
+          storage << blob
+          expect(blob[:uploaded_to_s3]).to be(false)
+          expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(false)
+        end
       end
     end
   end

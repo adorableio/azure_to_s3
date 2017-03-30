@@ -28,8 +28,10 @@ module AzureToS3
     def <<(blob)
       if existing = @db[:blobs].where(name: blob[:name]).first
         blob[:id] = existing[:id]
+        blob[:uploaded_to_s3] = (blob[:md5_64] == existing[:md5_64]) && (blob[:content_length] == existing[:content_length])
         update(blob)
       else
+        blob[:uploaded_to_s3] = false
         @db[:blobs].insert(blob).tap {|id| blob[:id] = id }
       end
     end
