@@ -11,7 +11,13 @@ module AzureToS3
     end
 
     def fetch_blob_content(blob)
-      _, content = @blob_client.get_blob @container, blob.fetch(:name)
+      begin
+        _, content = @blob_client.get_blob @container, blob.fetch(:name)
+      rescue Faraday::ConnectionFailed, Faraday::TimeoutError
+        $stderr.puts "(fetch blob content) Connection failure, aborting this attempt..."
+        return
+      end
+
       md5 = Digest::MD5.new.tap {|m| m.update(content) }.base64digest
 
       if md5 == blob.fetch(:md5_64)
@@ -36,13 +42,20 @@ module AzureToS3
 
     private
     def each_blob(&block)
-      @blob_client.list_blobs(@container, marker: @storage.marker, max_results: @max_results).tap do |results|
-        results.each &block
+      puts "Listing blobs using marker: #{@storage.marker}"
 
-        marker = results.continuation_token
-        marker = nil if marker.empty?
-        @storage.marker = marker
+      begin
+        results = @blob_client.list_blobs(@container, marker: @storage.marker, max_results: @max_results)
+      rescue Faraday::ConnectionFailed, Faraday::TimeoutError
+        $stderr.puts "(list blobs) Connection failed, sleeping for 3 seconds and retrying"
+        sleep 3
+        each_blob(&block)
       end
+
+      results.each &block
+      marker = results.continuation_token
+      marker = nil if marker.empty?
+      @storage.marker = marker
 
       each_blob(&block) if @storage.marker
     end
