@@ -19,7 +19,12 @@ module AzureToS3
     when :memory
       @storage = InMemoryStorage.new
     when :postgres
-      db = Sequel.postgres ENV.fetch('AZURE_TO_S3_POSTGRES')
+      postgres_connection = ENV.fetch('AZURE_TO_S3_POSTGRES')
+      db = if postgres_connection.include?('postgres://')
+        Sequel.connect postgres_connection
+      else
+        Sequel.postgres postgres_connection
+      end
       @storage = SequelStorage.new db
       @storage.setup_tables
     else
