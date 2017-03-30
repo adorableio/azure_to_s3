@@ -9,6 +9,7 @@ module AzureToS3
 
     def upload_blob(blob, content)
       @s3.put_object bucket: @bucket, key: blob.fetch(:name), body: content, content_md5: blob.fetch(:file_md5_64)
+      blob[:uploaded_to_s3] = true
     end
   end
 end

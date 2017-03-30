@@ -56,10 +56,6 @@ module AzureToS3
       end
     end
 
-    def update(blob)
-      @db[:blobs].where(id: blob[:id]).update(blob)
-    end
-
     def marker=(new_marker)
       if new_marker
         if existing = @db[:marker].first
@@ -76,6 +72,11 @@ module AzureToS3
     def marker
       record = @db[:marker].first
       record[:marker] if record
+    end
+
+    private
+    def update(blob)
+      @db[:blobs].where(id: blob[:id]).update(blob)
     end
   end
 end
