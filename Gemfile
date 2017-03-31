@@ -7,5 +7,6 @@ gem "pg"
 gem "sqlite3"
 gem "rack"
 gem "json"
+gem "thin"
 
 gem "rspec", group: :test
