@@ -45,6 +45,6 @@ module AzureToS3
 
   def self.stats_server
     setup_storage
-    Rack::Handler::WEBrick.run StatsServer.new(@storage)
+    StatsServer.new(@storage)
   end
 end
