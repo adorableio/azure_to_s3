@@ -6,5 +6,6 @@ gem "sequel"
 gem "pg"
 gem "sqlite3"
 gem "rack"
+gem "json"
 
 gem "rspec", group: :test
