@@ -82,7 +82,7 @@ module AzureToS3
           (SELECT COUNT(*) AS validated_md5 FROM blobs WHERE validated=\'md5\') AS c3,
           (SELECT COUNT(*) AS validated_length FROM blobs WHERE validated=\'length\') AS c4
         '
-      ].first
+      ].first.merge(marker: marker)
     end
 
     private
