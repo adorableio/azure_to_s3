@@ -6,15 +6,6 @@ describe AzureToS3::AzureBlobClient do
     let(:blob_client) { double('blob client', list_blobs: FakeResults.new) }
     let(:storage) { AzureToS3::InMemoryStorage.new }
 
-    class FakeResults < Array
-      attr_reader :continuation_token
-
-      def initialize(opts={})
-        super(opts[:results] || [])
-        @continuation_token = opts[:continuation_token] || ''
-      end
-    end
-
     it 'lists blobs on the blob client' do
       expect(blob_client).to receive(:list_blobs).
         with('container', marker: nil, max_results: nil)
@@ -94,6 +85,84 @@ describe AzureToS3::AzureBlobClient do
         .and_return(FakeResults.new)
 
       client.fetch_blobs
+    end
+  end
+
+  describe '#fetch_blob_content(blob)' do
+    let(:client) { AzureToS3::AzureBlobClient.new('container', storage, blob_client) }
+    let(:blob) { { name: 'the_blob', azure_md5_64: 'M6pHyAZoSEjBLvuY8pdXTw==', content_length: 11 } }
+    let(:blob_client) { double('blob client', list_blobs: FakeResults.new, get_blob: [:ignore, 'md5_content']) }
+    let(:storage) { AzureToS3::InMemoryStorage.new }
+
+    it 'gets blob information from the blob client' do
+      expect(blob_client).to receive(:get_blob).with('container', 'the_blob')
+      client.fetch_blob_content blob
+    end
+
+    it 'sets file_md5_64 on the blob' do
+      client.fetch_blob_content blob
+      expect(blob[:file_md5_64]).to be
+    end
+
+    context 'content md5 matches azure md5' do
+      it 'sets validated to md5' do
+        client.fetch_blob_content blob
+        expect(blob[:validated]).to eq('md5')
+      end
+
+      it 'yields the content' do
+        content = nil
+        client.fetch_blob_content(blob) {|c| content = c }
+        expect(content).to eq('md5_content')
+      end
+    end
+
+    context 'md5 does not match, content length does' do
+      before { blob[:azure_md5_64] = nil }
+
+      it 'sets validated to length' do
+        client.fetch_blob_content blob
+        expect(blob[:validated]).to eq('length')
+      end
+
+      it 'yields the content' do
+        content = nil
+        client.fetch_blob_content(blob) {|c| content = c }
+        expect(content).to eq('md5_content')
+      end
+    end
+
+    context 'neither md5 nor content length match' do
+      before do
+        blob[:azure_md5_64] = nil
+        blob[:content_length] += 1
+      end
+
+      it 'sets validated to nil if neither md5 nor content length match' do
+        client.fetch_blob_content blob
+        expect(blob[:validated]).to be_nil
+      end
+
+      it 'does not yield the content' do
+        content = nil
+        client.fetch_blob_content(blob) {|c| content = c }
+        expect(content).to be_nil
+      end
+    end
+
+    it 'returns nil if the connection fails' do
+      expect(blob_client).to receive(:get_blob)
+        .and_raise(Faraday::ConnectionFailed.new('connection failed'))
+      expect(client.fetch_blob_content(blob)).to be_nil
+    end
+  end
+
+  class FakeResults < Array
+    attr_reader :continuation_token
+
+    def initialize(opts={})
+      super(opts[:results] || [])
+      @continuation_token = opts[:continuation_token] || ''
     end
   end
 end

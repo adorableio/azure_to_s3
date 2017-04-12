@@ -26,7 +26,7 @@ module AzureToS3
         blob[:validated] = 'length'
       end
 
-      yield(content) if blob[:validated]
+      yield(content) if blob[:validated] && block_given?
     end
 
     def fetch_blobs
