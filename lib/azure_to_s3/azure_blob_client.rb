@@ -2,10 +2,9 @@ require 'azure/storage'
 
 module AzureToS3
   class AzureBlobClient
-    def initialize(container, storage, max_results=nil)
+    def initialize(container, storage, blob_client, max_results=nil)
       @container = container
-      @azure_client = Azure::Storage::Client.create
-      @blob_client = @azure_client.blob_client
+      @blob_client = blob_client
       @storage = storage
       @max_results = max_results
     end
@@ -47,18 +46,17 @@ module AzureToS3
 
       begin
         results = @blob_client.list_blobs(@container, marker: @storage.marker, max_results: @max_results)
+        results.each &block
+        marker = results.continuation_token
+        marker = nil if marker.empty?
+        @storage.marker = marker
+
+        each_blob(&block) if marker
       rescue Faraday::ConnectionFailed, Faraday::TimeoutError
         $stderr.puts "(list blobs) Connection failed, sleeping for 3 seconds and retrying"
         sleep 3
         each_blob(&block)
       end
-
-      results.each &block
-      marker = results.continuation_token
-      marker = nil if marker.empty?
-      @storage.marker = marker
-
-      each_blob(&block) if @storage.marker
     end
   end
 end

@@ -8,7 +8,8 @@ require_relative 'azure_to_s3/stats_server'
 module AzureToS3
   def self.setup_all
     setup_storage
-    @blob_client = AzureBlobClient.new ENV.fetch('AZURE_TO_S3_CONTAINER'), @storage
+    azure_client = Azure::Storage::Client.create
+    @blob_client = AzureBlobClient.new ENV.fetch('AZURE_TO_S3_CONTAINER'), @storage, azure_client.blob_client
     @s3_client = S3Client.new ENV.fetch('AZURE_TO_S3_BUCKET')
   end
 
