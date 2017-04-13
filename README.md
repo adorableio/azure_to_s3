@@ -32,3 +32,7 @@ export AZURE_TO_S3_POSTGRES=<postgres db name or connection string>
 ADAPTER=postgres ./bin/fetch_from_azure
 ADAPTER=postgres ./bin/put_to_s3
 ```
+
+## TODO
+
+* handle case where we re-fetch from azure
