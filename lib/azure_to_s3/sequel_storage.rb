@@ -56,7 +56,7 @@ module AzureToS3
 
     def each(&block)
       while (@db.transaction {
-        if record = @db['SELECT * FROM blobs WHERE uploaded_to_s3 IS FALSE ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1'].first
+        if record = @db["SELECT * FROM blobs WHERE NOT uploaded_to_s3 AND NOT validation_failed ORDER BY id #{'FOR UPDATE SKIP LOCKED' if postgres?} LIMIT 1"].first
           block.call record
           record
         else
@@ -98,6 +98,10 @@ module AzureToS3
     private
     def update(blob)
       @db[:blobs].where(id: blob[:id]).update(blob)
+    end
+
+    def postgres?
+      @db.adapter_scheme == :postgres
     end
   end
 end
