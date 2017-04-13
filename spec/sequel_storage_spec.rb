@@ -1,4 +1,4 @@
-require_relative '../lib/azure_to_s3'
+require_relative 'spec_helper'
 
 describe AzureToS3::SequelStorage do
   let(:db) { Sequel.sqlite }

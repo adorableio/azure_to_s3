@@ -158,13 +158,4 @@ describe AzureToS3::AzureBlobClient do
       expect(client.fetch_blob_content(blob)).to be_nil
     end
   end
-
-  class FakeResults < Array
-    attr_reader :continuation_token
-
-    def initialize(opts={})
-      super(opts[:results] || [])
-      @continuation_token = opts[:continuation_token] || ''
-    end
-  end
 end
