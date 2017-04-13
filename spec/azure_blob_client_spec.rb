@@ -4,7 +4,9 @@ describe AzureToS3::AzureBlobClient do
   describe '#fetch_blobs' do
     let(:client) { AzureToS3::AzureBlobClient.new('container', storage, blob_client) }
     let(:blob_client) { double('blob client', list_blobs: FakeResults.new) }
-    let(:storage) { AzureToS3::InMemoryStorage.new }
+    let(:db) { Sequel.sqlite }
+    let(:storage) { AzureToS3::SequelStorage.new db }
+    before { storage.setup_tables }
 
     it 'lists blobs on the blob client' do
       expect(blob_client).to receive(:list_blobs).
