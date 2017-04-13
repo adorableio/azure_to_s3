@@ -10,7 +10,6 @@ module AzureToS3
       @storage.each do |blob|
         @blob_client.fetch_blob_content(blob) do |content|
           @s3_client.upload_blob blob, content
-          @storage << blob
         end
 
         if blob[:validated]

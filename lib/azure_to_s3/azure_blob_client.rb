@@ -20,13 +20,23 @@ module AzureToS3
       md5 = Digest::MD5.new.tap {|m| m.update(content) }.base64digest
       blob[:file_md5_64] = md5
 
-      if md5 == blob.fetch(:azure_md5_64)
+      azure_md5 = blob.fetch(:azure_md5_64).to_s # might be nil from azure?
+
+      if !azure_md5.empty? && md5 == azure_md5
         blob[:validated] = 'md5'
+      elsif !azure_md5.empty?
+        blob[:validated] = nil
+        blob[:validation_failed] = true
       elsif content.size == blob.fetch(:content_length)
         blob[:validated] = 'length'
+      else
+        blob[:validated] = nil
+        blob[:validation_failed] = true
       end
 
       yield(content) if blob[:validated] && block_given?
+
+      @storage << blob
     end
 
     def fetch_blobs
