@@ -15,9 +15,11 @@ module AzureToS3
           String :file_md5_64
           Integer :content_length
           String :validated
+          Boolean :validation_failed, default: false, null: false
           Boolean :uploaded_to_s3, default: false, null: false
 
           index :validated
+          index :validation_failed
           index :uploaded_to_s3
         end
       end
