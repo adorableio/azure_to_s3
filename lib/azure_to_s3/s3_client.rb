@@ -2,9 +2,9 @@ require 'aws-sdk'
 
 module AzureToS3
   class S3Client
-    def initialize(bucket)
+    def initialize(bucket, s3=Aws::S3::Client.new)
       @bucket = bucket
-      @s3 = Aws::S3::Client.new
+      @s3 = s3
     end
 
     def upload_blob(blob, content)
