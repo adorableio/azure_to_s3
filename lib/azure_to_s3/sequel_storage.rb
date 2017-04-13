@@ -35,15 +35,23 @@ module AzureToS3
       if existing = @db[:blobs].where(name: blob[:name]).first
         blob[:id] = existing[:id]
         if existing[:uploaded_to_s3]
-          blob[:uploaded_to_s3] = ((existing[:file_md5_64] && (blob[:file_md5_64] == existing[:file_md5_64])) ||
-                                    (blob[:file_md5_64] && !existing[:file_md5_64])) &&
-                                  (blob[:content_length] == existing[:content_length])
+          blob[:uploaded_to_s3] = file_md5_64_matches?(existing, blob) &&
+                                    content_length_matches?(existing, blob)
         end
         update(blob)
       else
         blob[:uploaded_to_s3] = false
         @db[:blobs].insert(blob).tap {|id| blob[:id] = id }
       end
+    end
+
+    def file_md5_64_matches?(existing, blob)
+      (blob[:file_md5_64] && !existing[:file_md5_64]) ||
+        (existing[:file_md5_64] && (blob[:file_md5_64] == existing[:file_md5_64]))
+    end
+
+    def content_length_matches?(existing, blob)
+      blob[:content_length] == existing[:content_length]
     end
 
     def each(&block)
