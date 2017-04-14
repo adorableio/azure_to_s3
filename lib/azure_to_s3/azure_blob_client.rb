@@ -12,7 +12,7 @@ module AzureToS3
     def fetch_blob_content(blob)
       begin
         _, content = @blob_client.get_blob @container, blob.fetch(:name)
-      rescue Faraday::ConnectionFailed, Faraday::TimeoutError
+      rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Azure::Core::Http::HTTPError
         $stderr.puts "(fetch blob content) Connection failure, aborting this attempt..."
         return
       end
@@ -62,7 +62,7 @@ module AzureToS3
         @storage.marker = marker
 
         each_blob(&block) if marker
-      rescue Faraday::ConnectionFailed, Faraday::TimeoutError
+      rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Azure::Core::Http::HTTPError
         $stderr.puts "(list blobs) Connection failed, sleeping for 3 seconds and retrying"
         sleep 3
         each_blob(&block)
