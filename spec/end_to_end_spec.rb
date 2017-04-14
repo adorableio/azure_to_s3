@@ -3,13 +3,18 @@ require_relative 'spec_helper'
 describe 'fetching from azure' do
   let(:client) { AzureToS3::AzureBlobClient.new('container', storage, blob_client) }
   let(:blob_client) {
-    double('blob client', list_blobs: FakeResults.new(results: [
-      double('blob', name: 'my_blob', properties: blob_properties)
-    ]))
+    double('blob client')
   }
   let(:blob_properties) { { content_md5: 'M6pHyAZoSEjBLvuY8pdXTw==', content_length: 11 } }
   let(:db) { Sequel.sqlite }
   let(:storage) { AzureToS3::SequelStorage.new db }
+
+  before do
+    allow(blob_client).to receive(:list_blobs)
+      .and_return(
+        FakeResults.new(results: [double('blob', name: 'my_blob', properties: blob_properties)])
+      )
+  end
 
   before { storage.setup_tables }
   before { client.fetch_blobs }
@@ -64,7 +69,7 @@ describe 'fetching from azure' do
     end
 
     context 'md5 is empty, content length matches' do
-      let(:blob_properties) { super().tap {|h| h[:content_md5] = '' } }
+      let(:blob_properties) { super().merge(content_md5: '') }
 
       it 'uploads the file to s3' do
         expect(s3_api).to have_received(:put_object).with(
@@ -90,7 +95,7 @@ describe 'fetching from azure' do
     end
 
     context 'md5 is present but does not match' do
-      let(:blob_properties) { super().tap {|h| h[:content_md5] = 'no_match' } }
+      let(:blob_properties) { super().merge(content_md5: 'no_match') }
 
       it 'does not upload the file to s3' do
         expect(s3_api).to_not have_received(:put_object)
@@ -128,6 +133,53 @@ describe 'fetching from azure' do
           validation_failed: true,
           uploaded_to_s3: false,
         )
+      end
+    end
+
+    context 'and fetching again...' do
+      before do
+        allow(blob_client).to receive(:list_blobs)
+          .and_return(
+            FakeResults.new(results: [double('blob', name: 'my_blob', properties: blob_properties_2)])
+          )
+
+        client.fetch_blobs
+      end
+
+      let(:blob_properties_2) { blob_properties.clone }
+
+      context 'details matches stored' do
+        it 'leaves the record untouched' do
+          expect(db[:blobs].first).to eq(
+            id: 1,
+            name: 'my_blob',
+            azure_md5_64: 'M6pHyAZoSEjBLvuY8pdXTw==',
+            file_md5_64: 'M6pHyAZoSEjBLvuY8pdXTw==',
+            content_length: 11,
+            validated: 'md5',
+            validation_failed: false,
+            uploaded_to_s3: true
+          )
+        end
+      end
+
+      context 'details do not match stored' do
+        let(:blob_properties_2) {
+          super().merge(content_md5: '', content_length: 12)
+        }
+
+        it 'sets details and resets file_md5_64, validated, validation_failed, and uploaded_to_s3' do
+          expect(db[:blobs].first).to eq(
+            id: 1,
+            name: 'my_blob',
+            azure_md5_64: '',
+            file_md5_64: nil,
+            content_length: 12,
+            validated: nil,
+            validation_failed: false,
+            uploaded_to_s3: false
+          )
+        end
       end
     end
   end

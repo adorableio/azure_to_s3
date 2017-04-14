@@ -11,16 +11,10 @@ describe AzureToS3::SequelStorage do
         expect { storage << { name: 'chicken' } }
           .to change { db[:blobs].count }.by(1)
       end
-
-      it 'sets uploaded_to_s3 to false' do
-        blob = { name: 'chicken' }
-        storage << blob
-        expect(blob[:uploaded_to_s3]).to be(false)
-      end
     end
 
     context 'an existing blob (matching on name)' do
-      let(:blob) { { name: 'chicken', file_md5_64: 'abc', content_length: 123 } }
+      let(:blob) { { name: 'chicken', azure_md5_64: 'abc', content_length: 123 } }
       before { storage << blob }
 
       it 'does not create a new record' do
@@ -29,31 +23,30 @@ describe AzureToS3::SequelStorage do
 
       it 'does not set uploaded_to_s3 to true' do
         storage << blob
-        expect(blob[:uploaded_to_s3]).to be(false)
         expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(false)
       end
 
       context 'uploaded_to_s3=true' do
-        before { db[:blobs].update(uploaded_to_s3: true) }
+        before do
+          blob[:uploaded_to_s3] = true
+          db[:blobs].update(uploaded_to_s3: true)
+        end
 
-        it 'sets it to false when the file_md5_64 differs' do
-          blob[:file_md5_64] = 'DEF'
+        it 'sets it to false when the azure_md5_64 differs' do
+          blob[:azure_md5_64] = 'DEF'
           storage << blob
-          expect(blob[:uploaded_to_s3]).to be(false)
           expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(false)
         end
 
         it 'sets it to false when the content_length differs' do
           blob[:content_length] = 456
           storage << blob
-          expect(blob[:uploaded_to_s3]).to be(false)
           expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(false)
         end
 
-        it 'does not set it to false when the existing file_md5_64 is nil' do
-          db[:blobs].update(file_md5_64: nil)
-          storage << blob
-          expect(blob[:uploaded_to_s3]).to be(true)
+        it 'works with a new object (azure_md5_64 and content length matches)' do
+          storage << { name: 'chicken', azure_md5_64: 'abc', content_length: 123 }
+          expect(db[:blobs].count).to eq(1)
           expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(true)
         end
       end

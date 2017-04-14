@@ -34,10 +34,15 @@ module AzureToS3
     def <<(blob)
       if existing = @db[:blobs].where(name: blob[:name]).first
         blob[:id] = existing[:id]
-        if existing[:uploaded_to_s3]
-          blob[:uploaded_to_s3] = file_md5_64_matches?(existing, blob) &&
-                                    content_length_matches?(existing, blob)
+
+        if existing[:uploaded_to_s3] &&
+            (existing.fetch(:azure_md5_64) != blob.fetch(:azure_md5_64) ||
+             existing.fetch(:content_length) != blob.fetch(:content_length))
+          blob[:uploaded_to_s3] = false
+          blob[:validated] = nil
+          blob[:file_md5_64] = nil
         end
+
         update(blob)
       else
         blob[:uploaded_to_s3] = false
