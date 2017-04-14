@@ -37,10 +37,8 @@ describe AzureToS3::AzureBlobClient do
     end
 
     it 'saves the azure results marker to storage' do
-      allow(blob_client).to receive(:list_blobs).and_return(FakeResults.new(continuation_token: 'the_token'),
-                                                            FakeResults.new)
+      allow(blob_client).to receive(:list_blobs).and_return(FakeResults.new(continuation_token: 'the_token'))
       expect(storage).to receive(:marker=).with('the_token')
-      expect(storage).to receive(:marker=).with(nil)
 
       client.fetch_blobs
     end

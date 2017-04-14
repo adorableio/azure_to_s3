@@ -52,20 +52,25 @@ module AzureToS3
 
     private
     def each_blob(&block)
-      puts "Listing blobs using marker: #{@storage.marker}"
+      first_run = true
 
-      begin
-        results = @blob_client.list_blobs(@container, marker: @storage.marker, max_results: @max_results)
-        results.each &block
-        marker = results.continuation_token
-        marker = nil if marker.empty?
-        @storage.marker = marker
+      # I don't like this, but a recursive approach runs out of memory
+      while first_run || (more = @storage.marker)
+        first_run = false
 
-        each_blob(&block) if marker
-      rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Azure::Core::Http::HTTPError, Seahorse::Client::NetworkingError
-        $stderr.puts "(list blobs) Connection failed, sleeping for 3 seconds and retrying"
-        sleep 3
-        each_blob(&block)
+        begin
+          puts "Listing blobs using marker: #{@storage.marker}"
+          
+          results = @blob_client.list_blobs(@container, marker: @storage.marker, max_results: @max_results)
+          results.each &block
+          marker = results.continuation_token
+          marker = nil if marker.empty?
+          @storage.marker = marker
+        rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Azure::Core::Http::HTTPError, Seahorse::Client::NetworkingError
+          $stderr.puts "(list blobs) Connection failed, sleeping for 3 seconds and retrying"
+          sleep 3
+          retry
+        end
       end
     end
   end
