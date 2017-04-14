@@ -52,15 +52,10 @@ module AzureToS3
 
     private
     def each_blob(&block)
-      first_run = true
-
-      # I don't like this, but a recursive approach runs out of memory
-      while first_run || (more = @storage.marker)
-        first_run = false
-
+      loop do
         begin
           puts "Listing blobs using marker: #{@storage.marker}"
-          
+
           results = @blob_client.list_blobs(@container, marker: @storage.marker, max_results: @max_results)
           results.each &block
           marker = results.continuation_token
@@ -71,6 +66,8 @@ module AzureToS3
           sleep 3
           retry
         end
+
+        break unless @storage.marker
       end
     end
   end
