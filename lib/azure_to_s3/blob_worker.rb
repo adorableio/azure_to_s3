@@ -12,7 +12,7 @@ module AzureToS3
           @s3_client.upload_blob blob, content
         end
 
-        if blob[:validated]
+        if blob[:uploaded_to_s3]
           puts "Successfully uploaded #{blob.fetch(:name)} (#{blob.fetch(:validated)})"
         else
           $stderr.puts "Blob failed checksum: #{blob.inspect}"
