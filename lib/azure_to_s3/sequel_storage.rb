@@ -21,6 +21,7 @@ module AzureToS3
           index :validated
           index :validation_failed
           index :uploaded_to_s3
+          index [:uploaded_to_s3, :validation_failed]
         end
       end
 
