@@ -1,4 +1,5 @@
 require 'azure/storage'
+require 'azure/core/http/http_error'
 
 module AzureToS3
   class AzureBlobClient
@@ -12,8 +13,13 @@ module AzureToS3
     def fetch_blob_content(blob)
       begin
         _, content = @blob_client.get_blob @container, blob.fetch(:name)
-      rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Azure::Core::Http::HTTPError, Seahorse::Client::NetworkingError
-        $stderr.puts "(fetch blob content) Connection failure, aborting this attempt..."
+      rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Azure::Core::Http::HTTPError, Seahorse::Client::NetworkingError => e
+        if e.respond_to?(:type) && e.type == 'BlobNotFound'
+          $stderr.puts "Blob not found on Azure, deleting... (#{blob.fetch(:name)})"
+          @storage.delete blob
+        else
+          $stderr.puts "(fetch blob content) Connection failure, aborting this attempt... (#{blob.fetch(:name)})"
+        end
         return
       end
 

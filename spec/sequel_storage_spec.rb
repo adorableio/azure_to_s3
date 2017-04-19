@@ -53,6 +53,20 @@ describe AzureToS3::SequelStorage do
     end
   end
 
+  describe '#delete(blob)' do
+    let(:blob) { { name: 'funky_chicken' } }
+    before do
+      storage << { name: 'this_will_stick_around' }
+      storage << blob
+    end
+
+    it 'removes the blob from the database' do
+      expect { storage.delete blob }
+        .to change { db[:blobs].count }.by(-1)
+      expect(db[:blobs][id: blob[:id]]).to be_nil
+    end
+  end
+
   describe 'marker=(new_marker)' do
     it 'inserts a new marker' do
       expect { storage.marker = 'abc' }

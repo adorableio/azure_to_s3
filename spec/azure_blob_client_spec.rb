@@ -155,5 +155,18 @@ describe AzureToS3::AzureBlobClient do
         .and_raise(Faraday::ConnectionFailed.new('connection failed'))
       expect(client.fetch_blob_content(blob)).to be_nil
     end
+
+    # I had to dig around the azure-core gem to figure out the structure...
+    # lib/azure/core/http/http_error.rb
+    it 'deletes the blob from the database if it has been deleted from azure' do
+      allow(blob_client).to receive(:get_blob)
+        .and_raise(Azure::Core::Http::HTTPError.new(
+          double('http response', uri: 'http://ignore_this', status_code: '404', body:
+            '<code>BlobNotFound</code>'))
+        )
+
+      expect(storage).to receive(:delete).with(blob)
+      expect(client.fetch_blob_content(blob)).to be_nil
+    end
   end
 end

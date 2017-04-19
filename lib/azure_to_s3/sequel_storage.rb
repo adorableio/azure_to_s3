@@ -51,6 +51,10 @@ module AzureToS3
       end
     end
 
+    def delete(blob)
+      @db[:blobs].where(id: blob.fetch(:id)).delete
+    end
+
     def file_md5_64_matches?(existing, blob)
       (blob[:file_md5_64] && !existing[:file_md5_64]) ||
         (existing[:file_md5_64] && (blob[:file_md5_64] == existing[:file_md5_64]))
