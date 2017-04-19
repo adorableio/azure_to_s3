@@ -10,3 +10,4 @@ export AZURE_TO_S3_BUCKET=<aws s3 bucket>
 
 # if using postgres local storage...
 export AZURE_TO_S3_POSTGRES=<postgres db name or connection string>
+export ADAPTER=postgres
