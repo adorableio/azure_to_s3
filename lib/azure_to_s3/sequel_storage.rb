@@ -62,7 +62,7 @@ module AzureToS3
 
     def each(&block)
       while (@db.transaction {
-        if record = @db["SELECT * FROM blobs WHERE NOT uploaded_to_s3 AND NOT validation_failed ORDER BY id #{'FOR UPDATE SKIP LOCKED' if postgres?} LIMIT 1"].first
+        if record = @db["SELECT * FROM blobs WHERE NOT uploaded_to_s3 AND NOT validation_failed #{'FOR UPDATE SKIP LOCKED' if postgres?} LIMIT 1"].first
           block.call record
           record
         else
