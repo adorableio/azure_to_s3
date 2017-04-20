@@ -26,6 +26,14 @@ describe AzureToS3::SequelStorage do
         expect(db[:blobs][id: blob[:id]][:uploaded_to_s3]).to be(false)
       end
 
+      it 'unsets the deleted flag' do
+        blob[:deleted] = true
+        db[:blobs].update(uploaded_to_s3: true)
+        storage << blob
+        expect(blob[:deleted]).to be(false)
+        expect(db[:blobs][id: blob[:id]][:deleted]).to be(false)
+      end
+
       context 'uploaded_to_s3=true' do
         before do
           blob[:uploaded_to_s3] = true
@@ -60,10 +68,57 @@ describe AzureToS3::SequelStorage do
       storage << blob
     end
 
-    it 'removes the blob from the database' do
+    it 'sets the deleted flag to false' do
       expect { storage.delete blob }
-        .to change { db[:blobs].count }.by(-1)
-      expect(db[:blobs][id: blob[:id]]).to be_nil
+        .to_not change { db[:blobs].count }
+      expect(db[:blobs][id: blob[:id]][:deleted]).to be(true)
+    end
+  end
+
+  describe '#each' do
+    let(:records) { [] }
+
+    before do
+      storage << { name: 'funky' }
+      storage << { name: 'chicken' }
+    end
+
+    it 'yields each record' do
+      storage.each do |r|
+        records << r.fetch(:name)
+        db[:blobs].where(id: r[:id]).update(validation_failed: true)
+      end
+      expect(records).to eq(%w(funky chicken))
+    end
+
+    it 'excludes records uploaded to S3' do
+      db[:blobs].where(name: 'chicken').update(uploaded_to_s3: true)
+
+      storage.each do |r|
+        records << r.fetch(:name)
+        db[:blobs].where(id: r[:id]).update(validation_failed: true)
+      end
+      expect(records).to eq(%w(funky))
+    end
+
+    it 'excludes records that have failed validation' do
+      db[:blobs].where(name: 'chicken').update(validation_failed: true)
+
+      storage.each do |r|
+        records << r.fetch(:name)
+        db[:blobs].where(id: r[:id]).update(validation_failed: true)
+      end
+      expect(records).to eq(%w(funky))
+    end
+
+    it 'excludes records that have been deleted' do
+      db[:blobs].where(name: 'chicken').update(deleted: true)
+
+      storage.each do |r|
+        records << r.fetch(:name)
+        db[:blobs].where(id: r[:id]).update(validation_failed: true)
+      end
+      expect(records).to eq(%w(funky))
     end
   end
 

@@ -28,7 +28,8 @@ describe 'fetching from azure' do
       content_length: 11,
       validated: nil,
       validation_failed: false,
-      uploaded_to_s3: false
+      uploaded_to_s3: false,
+      deleted: false
     )
   end
 
@@ -63,7 +64,8 @@ describe 'fetching from azure' do
           content_length: 11,
           validated: 'md5',
           validation_failed: false,
-          uploaded_to_s3: true
+          uploaded_to_s3: true,
+          deleted: false
         )
       end
     end
@@ -89,7 +91,8 @@ describe 'fetching from azure' do
           content_length: 11,
           validated: 'length',
           validation_failed: false,
-          uploaded_to_s3: true
+          uploaded_to_s3: true,
+          deleted: false
         )
       end
     end
@@ -111,6 +114,7 @@ describe 'fetching from azure' do
           validated: nil,
           validation_failed: true,
           uploaded_to_s3: false,
+          deleted: false
         )
       end
     end
@@ -132,6 +136,7 @@ describe 'fetching from azure' do
           validated: nil,
           validation_failed: true,
           uploaded_to_s3: false,
+          deleted: false
         )
       end
     end
@@ -158,7 +163,8 @@ describe 'fetching from azure' do
             content_length: 11,
             validated: 'md5',
             validation_failed: false,
-            uploaded_to_s3: true
+            uploaded_to_s3: true,
+            deleted: false
           )
         end
       end
@@ -177,7 +183,8 @@ describe 'fetching from azure' do
             content_length: 12,
             validated: nil,
             validation_failed: false,
-            uploaded_to_s3: false
+            uploaded_to_s3: false,
+            deleted: false
           )
         end
       end

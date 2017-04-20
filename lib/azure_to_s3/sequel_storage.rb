@@ -17,6 +17,7 @@ module AzureToS3
           String :validated
           Boolean :validation_failed, default: false, null: false
           Boolean :uploaded_to_s3, default: false, null: false
+          Boolean :deleted, default: false, null: false
 
           index :validated
           index :validation_failed
@@ -35,6 +36,7 @@ module AzureToS3
     def <<(blob)
       if existing = @db[:blobs].where(name: blob[:name]).first
         blob[:id] = existing[:id]
+        blob[:deleted] = false
 
         if existing[:uploaded_to_s3] &&
             (existing.fetch(:azure_md5_64) != blob.fetch(:azure_md5_64) ||
@@ -52,7 +54,7 @@ module AzureToS3
     end
 
     def delete(blob)
-      @db[:blobs].where(id: blob.fetch(:id)).delete
+      @db[:blobs].where(id: blob.fetch(:id)).update(deleted: true)
     end
 
     def file_md5_64_matches?(existing, blob)
@@ -66,7 +68,7 @@ module AzureToS3
 
     def each(&block)
       while (@db.transaction {
-        if record = @db["SELECT * FROM blobs WHERE NOT uploaded_to_s3 AND NOT validation_failed #{'FOR UPDATE SKIP LOCKED' if postgres?} LIMIT 1"].first
+        if record = @db["SELECT * FROM blobs WHERE NOT uploaded_to_s3 AND NOT validation_failed AND NOT deleted #{'FOR UPDATE SKIP LOCKED' if postgres?} LIMIT 1"].first
           block.call record
           record
         else
