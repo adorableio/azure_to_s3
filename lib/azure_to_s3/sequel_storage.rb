@@ -100,7 +100,8 @@ module AzureToS3
           (SELECT COUNT(*) AS count_uploaded FROM blobs WHERE uploaded_to_s3 IS TRUE) AS c2,
           (SELECT COUNT(*) AS validated_md5 FROM blobs WHERE validated=\'md5\') AS c3,
           (SELECT COUNT(*) AS validated_length FROM blobs WHERE validated=\'length\') AS c4,
-          (SELECT COUNT(*) AS validation_failed FROM blobs WHERE validation_failed) AS c5
+          (SELECT COUNT(*) AS validation_failed FROM blobs WHERE validation_failed) AS c5,
+          (SELECT COUNT(*) AS deleted_from_azure FROM blobs WHERE deleted) AS c6
         '
       ].first.merge(marker: marker)
     end
