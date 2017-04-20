@@ -19,10 +19,7 @@ module AzureToS3
           Boolean :uploaded_to_s3, default: false, null: false
           Boolean :deleted, default: false, null: false
 
-          index :validated
-          index :validation_failed
-          index :uploaded_to_s3
-          index [:uploaded_to_s3, :validation_failed]
+          index [:uploaded_to_s3, :validation_failed, :deleted]
         end
       end
 
