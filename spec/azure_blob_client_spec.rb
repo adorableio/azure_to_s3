@@ -117,8 +117,23 @@ describe AzureToS3::AzureBlobClient do
       end
     end
 
-    context 'md5 does not match, content length does' do
+    context 'md5 is not set, content matches' do
       before { blob[:azure_md5_64] = nil }
+
+      it 'sets validated to length' do
+        client.fetch_blob_content blob
+        expect(blob[:validated]).to eq('length')
+      end
+
+      it 'yields the content' do
+        content = nil
+        client.fetch_blob_content(blob) {|c| content = c }
+        expect(content).to eq('md5_content')
+      end
+    end
+
+    context 'md5 does not match, content matches' do
+      before { blob[:azure_md5_64] = 'this_does_not_match' }
 
       it 'sets validated to length' do
         client.fetch_blob_content blob

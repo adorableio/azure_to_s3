@@ -30,9 +30,6 @@ module AzureToS3
 
       if !azure_md5.empty? && md5 == azure_md5
         blob[:validated] = 'md5'
-      elsif !azure_md5.empty?
-        blob[:validated] = nil
-        blob[:validation_failed] = true
       elsif content.size == blob.fetch(:content_length)
         blob[:validated] = 'length'
       else

@@ -97,8 +97,35 @@ describe 'fetching from azure' do
       end
     end
 
-    context 'md5 is present but does not match' do
+    context 'md5 is present but does not match, content length matches' do
       let(:blob_properties) { super().merge(content_md5: 'no_match') }
+
+      it 'uploads the file to s3' do
+        expect(s3_api).to have_received(:put_object).with(
+          bucket: 'bucket',
+          key: 'my_blob',
+          body: 'md5_content',
+          content_md5: 'M6pHyAZoSEjBLvuY8pdXTw=='
+        )
+      end
+
+      it 'marks blob as validating with length' do
+        expect(db[:blobs].first).to eq(
+          id: 1,
+          name: 'my_blob',
+          azure_md5_64: 'no_match',
+          file_md5_64: 'M6pHyAZoSEjBLvuY8pdXTw==',
+          content_length: 11,
+          validated: 'length',
+          validation_failed: false,
+          uploaded_to_s3: true,
+          deleted: false
+        )
+      end
+    end
+
+    context 'neither md5 nor length match' do
+      let(:blob_properties) { super().merge(content_md5: 'no_match', content_length: 12) }
 
       it 'does not upload the file to s3' do
         expect(s3_api).to_not have_received(:put_object)
@@ -110,7 +137,7 @@ describe 'fetching from azure' do
           name: 'my_blob',
           azure_md5_64: 'no_match',
           file_md5_64: 'M6pHyAZoSEjBLvuY8pdXTw==',
-          content_length: 11,
+          content_length: 12,
           validated: nil,
           validation_failed: true,
           uploaded_to_s3: false,
